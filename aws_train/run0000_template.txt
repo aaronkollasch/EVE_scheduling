@@ -1,0 +1,1 @@
+python train_VAE.py --MSA_data_folder ./data/MSA_s3 --MSA_list ./data/mappings_s3/example_mapping.csv --protein_index 0 --MSA_weights_location ./data/weights --VAE_checkpoint_location ./results/VAE_parameters --model_name_suffix Jan1_PTEN_example --model_parameters_location ./EVE/default_model_params.json --training_logs_location ./logs/
