@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     aws_util = aws_utils.AWSUtility(s3_project=args.s3_project, s3_base_path=s3_path)
     aws_util.s3_sync(
-        local_folder=f"{home_path}/EVEScheduling/aws_train/",
+        local_folder=f"{home_path}/EVE_scheduling/aws_train/",
         s3_folder="scheduling/aws_train/",
         destination='s3',
         args=("--exclude", "*.py"),
