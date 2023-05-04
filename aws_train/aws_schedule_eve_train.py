@@ -45,6 +45,7 @@ mkdir {home_path}/s3_mnt
 s3fs {{s3_bucket}} {home_path}/s3_mnt -o umask=0002 -o iam_role
 ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/MSA {eve_path}/data/MSA_s3
 ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/mappings {eve_path}/data/mappings_s3
+ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/mappings {eve_path}/data/weights_s3
 '
 
 cd {eve_run_path}
