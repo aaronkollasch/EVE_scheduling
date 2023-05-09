@@ -4,32 +4,12 @@ import time
 import boto3
 import botocore.exceptions
 import argparse
-import base64
 
 CONDA_ENV = "protein_env"
 USERNAME = "ubuntu"
 EVE_FOLDER = "EVE"
 AWS_REGION = 'us-west-2'
 POWEROFF_TIME = 5  # number of minutes to wait after completion before terminating the instance
-
-eve_patch1 = """diff --git a/utils/data_utils.py b/utils/data_utils.py
-index 485c178..346d7a7 100644
---- a/utils/data_utils.py
-+++ b/utils/data_utils.py
-@@ -106,7 +106,10 @@ class MSA_processing:
-
-         # Connect local sequence index with uniprot index (index shift inferred from 1st row of MSA)
-         focus_loc = self.focus_seq_name.split("/")[-1]
--        start,stop = focus_loc.split("-")
-+        if "-" in focus_loc:
-+            start,stop = focus_loc.split("-")
-+        else:
-+            start,stop = 1, len(self.focus_seq)
-         self.focus_start_loc = int(start)
-         self.focus_stop_loc = int(stop)
-         self.uniprot_focus_col_to_wt_aa_dict \\
-"""
-eve_patch1 = base64.b64encode(eve_patch1.encode()).decode()
 
 home_path = f"/home/{USERNAME}"
 seqdesign_path = f"{home_path}/SeqDesign"
@@ -39,13 +19,14 @@ env_bin_path = f"{home_path}/anaconda3/envs/{CONDA_ENV}/bin"
 userdata_template = f"""#!/bin/bash
 su {USERNAME} -c '
 cd {eve_path}
-git pull
-echo "{eve_patch1}" | base64 -d > focus.patch && git apply focus.patch && rm focus.patch
+git remote add aaronkollasch https://github.com/aaronkollasch/EVE
+git fetch aaronkollasch
+git checkout -b custom aaronkollasch/master
 mkdir {home_path}/s3_mnt
 s3fs {{s3_bucket}} {home_path}/s3_mnt -o umask=0002 -o iam_role
 ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/MSA {eve_path}/data/MSA_s3
 ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/mappings {eve_path}/data/mappings_s3
-ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/mappings {eve_path}/data/weights_s3
+ln -s {home_path}/s3_mnt/{{s3_subpath}}/{{s3_project}}/data/weights {eve_path}/data/weights_s3
 '
 
 cd {eve_run_path}
