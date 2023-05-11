@@ -352,6 +352,7 @@ if __name__ == "__main__":
         sum(1 for worker in worker_database["workers"].values()
             if worker["current_index"] is not None)
     )
+    # launch required number of workers
     for i_worker in range(min(args.num_workers, num_remaining)):
         worker_name = f"eve_train_{i_worker}"
         worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
@@ -379,8 +380,14 @@ if __name__ == "__main__":
             except botocore.exceptions.ClientError as e:
                 print(e)
                 break
-    print("workers:", worker_database)
-    print("protein_indices:", protein_indices)
+    num_running = sum(1 for worker in worker_database["workers"].values()
+                      if worker["instance_id"] is not None)
+    print(f"{num_running} workers running.")
+    print(
+        f"{len(protein_indices)} unassigned protein_indices:",
+        protein_indices[:10],
+        "..." if len(protein_indices) > 10 else ""
+    )
 
     server_address = ('', SCHEDULER_PORT)
     server = HTTPServer(server_address, Scheduler)
@@ -393,5 +400,5 @@ if __name__ == "__main__":
     server.protein_indices = protein_indices
     save_database()
 
-    print(f"Starting scheduler on http://{SCHEDULER_IP}:{SCHEDULER_PORT}")
+    print(f"Starting scheduler server on http://{SCHEDULER_IP}:{SCHEDULER_PORT}")
     server.serve_forever()
