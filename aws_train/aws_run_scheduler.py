@@ -347,7 +347,12 @@ if __name__ == "__main__":
             "workers": {},
         }
 
-    for i_worker in range(min(args.num_workers, len(protein_indices))):
+    num_remaining = (
+        len(protein_indices) +
+        sum(1 for worker in worker_database["workers"].values()
+            if worker["current_index"] is not None)
+    )
+    for i_worker in range(min(args.num_workers, num_remaining)):
         worker_name = f"eve_train_{i_worker}"
         worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
         worker_database["workers"].setdefault(worker_uuid, {})
