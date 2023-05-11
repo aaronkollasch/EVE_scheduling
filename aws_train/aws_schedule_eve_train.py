@@ -211,6 +211,10 @@ if __name__ == "__main__":
                         },
                     ],
                 )
+                if response3['ResponseMetadata']['HTTPStatusCode'] == 200:
+                    print(f"Alarm set for {name} at {threshold}% CPU utilization.")
+                else:
+                    print(response3)
             print("Launched.")
         except Exception as e:
             print(e)
