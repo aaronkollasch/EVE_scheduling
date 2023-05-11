@@ -9,7 +9,8 @@ CONDA_ENV = "protein_env"
 USERNAME = "ubuntu"
 EVE_FOLDER = "EVE"
 AWS_REGION = 'us-west-2'
-POWEROFF_TIME = 5  # number of minutes to wait after completion before terminating the instance
+# number of minutes to wait after completion before terminating the instance
+POWEROFF_TIME = 5
 
 home_path = f"/home/{USERNAME}"
 seqdesign_path = f"{home_path}/SeqDesign"
@@ -65,14 +66,20 @@ if __name__ == "__main__":
     sys.path.append(seqdesign_path)
     from seqdesign import aws_utils
 
-    parser = argparse.ArgumentParser(description="Calculate the log probability of mutated sequences.")
-    parser.add_argument('script', type=str, nargs='+', default=[], help="Script(s) to schedule on new instances")
+    parser = argparse.ArgumentParser(
+        description="Calculate the log probability of mutated sequences.")
+    parser.add_argument('script', type=str, nargs='+', default=[],
+                        help="Script(s) to schedule on new instances")
     parser.add_argument("--instance-type", type=str, default='p2.xlarge', metavar='TYPE',
                         help="AWS instance type (e.g. p2.xlarge)")
-    parser.add_argument("--split-lines", action='store_true', help="Run every line in a separate instance")
-    parser.add_argument("--alarm", action='store_true', help="Add a minimum CPU utilization alarm")
-    parser.add_argument("--dry-run", action='store_true', help="Perform a dry run")
-    parser.add_argument("--spot", action='store_true', help="Request a spot instance")
+    parser.add_argument("--split-lines", action='store_true',
+                        help="Run every line in a separate instance")
+    parser.add_argument("--alarm", action='store_true',
+                        help="Add a minimum CPU utilization alarm")
+    parser.add_argument("--dry-run", action='store_true',
+                        help="Perform a dry run")
+    parser.add_argument("--spot", action='store_true',
+                        help="Request a spot instance")
     parser.add_argument("--s3-bucket", type=str, default='markslab-private',
                         help="s3 bucket")
     parser.add_argument("--s3-subpath", type=str, default='eve',
@@ -83,7 +90,8 @@ if __name__ == "__main__":
 
     s3_path = f"s3://{args.s3_bucket}/{args.s3_subpath}"
 
-    aws_util = aws_utils.AWSUtility(s3_project=args.s3_project, s3_base_path=s3_path)
+    aws_util = aws_utils.AWSUtility(
+        s3_project=args.s3_project, s3_base_path=s3_path)
     aws_util.s3_sync(
         local_folder=f"{home_path}/EVE_scheduling/aws_train/",
         s3_folder="scheduling/aws_train/",
@@ -129,7 +137,8 @@ if __name__ == "__main__":
     ec2 = boto3.client('ec2', region_name=AWS_REGION)
     cw = boto3.client('cloudwatch', region_name=AWS_REGION)
     for name, run_string in zip(names, run_strings):
-        print(f"Launching {'spot' if args.spot else 'on-demand'} instance {name} with commands:")
+        print(
+            f"Launching {'spot' if args.spot else 'on-demand'} instance {name} with commands:")
         print(run_string)
         run_string = '\n'.join([
             f"{line.strip()} || EXIT_STATUS=$?"
@@ -149,8 +158,10 @@ if __name__ == "__main__":
                 InstanceType=args.instance_type,
                 UserData=userdata,
                 TagSpecifications=[
-                    {"ResourceType": "instance", "Tags": [{"Key": "Name", "Value": name}]},
-                    {"ResourceType": "volume", "Tags": [{"Key": "Name", "Value": name}]},
+                    {"ResourceType": "instance", "Tags": [
+                        {"Key": "Name", "Value": name}]},
+                    {"ResourceType": "volume", "Tags": [
+                        {"Key": "Name", "Value": name}]},
                 ],
                 InstanceInitiatedShutdownBehavior="terminate",
                 MinCount=1,
@@ -169,7 +180,8 @@ if __name__ == "__main__":
             if args.alarm and not args.dry_run:
                 instance_id = response['Instances'][0]['InstanceId']
                 try:
-                    response2 = ec2.describe_instance_types(InstanceTypes=[args.instance_type])
+                    response2 = ec2.describe_instance_types(
+                        InstanceTypes=[args.instance_type])
                     core_count = response2['InstanceTypes'][0]['VCpuInfo']['DefaultVCpus']
                 except (IndexError, KeyError, botocore.exceptions.BotoCoreError) as e:
                     print(e)

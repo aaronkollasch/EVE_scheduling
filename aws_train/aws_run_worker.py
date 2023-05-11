@@ -6,10 +6,14 @@ import requests
 import subprocess
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Calculate the log probability of mutated sequences.")
-    parser.add_argument('run_template', type=str, default=None, help="Path to script template to schedule on new jobs")
-    parser.add_argument("--worker-id", type=str, required=True, help="Unique ID of worker")
-    parser.add_argument("--scheduler-url", type=str, required=True, help="URL of scheduler")
+    parser = argparse.ArgumentParser(
+        description="Calculate the log probability of mutated sequences.")
+    parser.add_argument('run_template', type=str, default=None,
+                        help="Path to script template to schedule on new jobs")
+    parser.add_argument("--worker-id", type=str,
+                        required=True, help="Unique ID of worker")
+    parser.add_argument("--scheduler-url", type=str,
+                        required=True, help="URL of scheduler")
     parser.add_argument("--s3-path", type=str, default='s3://markslab-private/eve',
                         help="Subpath of main bucket")
     parser.add_argument("--s3-project", type=str, default='default', metavar='V',
@@ -23,7 +27,8 @@ if __name__ == "__main__":
     attempts = 0
     while attempts < 10:
         try:
-            r = requests.post(f"{args.scheduler_url}/get-job", json={"worker_id": args.worker_id})
+            r = requests.post(f"{args.scheduler_url}/get-job",
+                              json={"worker_id": args.worker_id})
         except requests.exceptions.ConnectionError:
             error = True
             attempts += 1
@@ -57,9 +62,12 @@ if __name__ == "__main__":
             r = subprocess.run(['bash', 'run_job.sh'], stdout=f, stderr=f)
         if r.returncode != 0:
             print("Error detected. Syncing all logs to S3.")
-            subprocess.run(['aws', 's3', 'sync', 'logs/', f'{args.s3_path}/{args.s3_project}/logs/_failed_jobs/'])
+            subprocess.run(['aws', 's3', 'sync', 'logs/',
+                           f'{args.s3_path}/{args.s3_project}/logs/_failed_jobs/'])
         else:
-            subprocess.run(['aws', 's3', 'sync', 'results/', f'{args.s3_path}/{args.s3_project}/results/'])
-            subprocess.run(['aws', 's3', 'sync', 'logs/', f'{args.s3_path}/{args.s3_project}/logs/'])
+            subprocess.run(['aws', 's3', 'sync', 'results/',
+                           f'{args.s3_path}/{args.s3_project}/results/'])
+            subprocess.run(['aws', 's3', 'sync', 'logs/',
+                           f'{args.s3_path}/{args.s3_project}/logs/'])
     if error:
         exit(1)

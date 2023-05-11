@@ -23,7 +23,8 @@ CONDA_ENV = "protein_env"
 USERNAME = "ubuntu"
 EVE_FOLDER = "EVE"
 AWS_REGION = 'us-west-2'
-POWEROFF_TIME = 5  # number of minutes to wait after completion before terminating the instance
+# number of minutes to wait after completion before terminating the instance
+POWEROFF_TIME = 5
 
 home_path = f"/home/{USERNAME}"
 seqdesign_path = f"{home_path}/SeqDesign"
@@ -75,12 +76,15 @@ tmux send -t train.0 './run.sh' ENTER
 "
 """
 
+
 def launch_worker(args, name, run_template, worker_uuid, s3_path):
     ec2 = boto3.client('ec2', region_name=AWS_REGION)
     cw = boto3.client('cloudwatch', region_name=AWS_REGION)
-    print(f"Launching {'spot' if args.spot else 'on-demand'} instance {name} {worker_uuid} with commands:")
+    print(
+        f"Launching {'spot' if args.spot else 'on-demand'} instance {name} {worker_uuid} with commands:")
     userdata = userdata_template.format(
-        run_template=base64.b64encode(run_template.encode('utf-8')).decode('utf-8'),
+        run_template=base64.b64encode(
+            run_template.encode('utf-8')).decode('utf-8'),
         worker_uuid=worker_uuid,
         s3_path=s3_path,
         s3_project=args.s3_project,
@@ -93,8 +97,10 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
             InstanceType=args.instance_type,
             UserData=userdata,
             TagSpecifications=[
-                {"ResourceType": "instance", "Tags": [{"Key": "Name", "Value": name}]},
-                {"ResourceType": "volume", "Tags": [{"Key": "Name", "Value": name}]},
+                {"ResourceType": "instance", "Tags": [
+                    {"Key": "Name", "Value": name}]},
+                {"ResourceType": "volume", "Tags": [
+                    {"Key": "Name", "Value": name}]},
             ],
             InstanceInitiatedShutdownBehavior="terminate",
             MinCount=1,
@@ -113,7 +119,8 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
         if args.alarm and not args.dry_run:
             instance_id = response['Instances'][0]['InstanceId']
             try:
-                response2 = ec2.describe_instance_types(InstanceTypes=[args.instance_type])
+                response2 = ec2.describe_instance_types(
+                    InstanceTypes=[args.instance_type])
                 core_count = response2['InstanceTypes'][0]['VCpuInfo']['DefaultVCpus']
             except (IndexError, KeyError, botocore.exceptions.BotoCoreError) as e:
                 print(e)
@@ -147,6 +154,7 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
     except Exception as e:
         print(e)
 
+
 class Scheduler(BaseHTTPRequestHandler):
     def _set_headers(self, code=200):
         self.send_response(code)
@@ -155,7 +163,8 @@ class Scheduler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self._set_headers(405)
-        self.wfile.write(json.dumps({"status": "ERROR", "message": "GET not supported."}).encode('utf-8'))
+        self.wfile.write(json.dumps(
+            {"status": "ERROR", "message": "GET not supported."}).encode('utf-8'))
 
     def do_POST(self):
         try:
@@ -165,74 +174,99 @@ class Scheduler(BaseHTTPRequestHandler):
             # Request: {"worker_id": "uuid"}
             # Response: {"status": "OK", "index": int|null}
             if parsed_path.path == "/get-job":
-                rdata = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                rdata = json.loads(self.rfile.read(
+                    int(self.headers['Content-Length'])))
                 worker_id = rdata['worker_id']
                 worker = self.server.worker_database[worker_id]
                 if worker["current_index"] is None and len(self.server.protein_indices) > 0:
                     current_index = self.server.protein_indices.pop(0)
                     worker["current_index"] = current_index
-                    print(f"Worker {worker_id} assigned index {current_index}.", file=sys.stderr)
+                    print(
+                        f"Worker {worker_id} assigned index {current_index}.", file=sys.stderr)
                     self.server.save_database()
                 self._set_headers()
-                self.wfile.write(json.dumps({"status": "OK", "index": worker['current_index']}).encode('utf-8'))
+                self.wfile.write(json.dumps(
+                    {"status": "OK", "index": worker['current_index']}).encode('utf-8'))
 
             # /update-job
             # Request: {"worker_id": "uuid", "status": "DONE"|"ERROR"}
             # Response: {"status": "OK"}
             elif parsed_path.path == "/update-job":
-                rdata = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                rdata = json.loads(self.rfile.read(
+                    int(self.headers['Content-Length'])))
                 worker_id = rdata['worker_id']
                 worker = self.server.worker_database[worker_id]
                 if worker.get("current_index") is None:
-                    print(f"Worker {worker_id} sent update with no current index.", file=sys.stderr)
+                    print(
+                        f"Worker {worker_id} sent update with no current index.", file=sys.stderr)
                     self._set_headers(400)
-                    self.wfile.write(json.dumps({"status": "ERROR", "message": "No current index."}).encode('utf-8'))
+                    self.wfile.write(json.dumps(
+                        {"status": "ERROR", "message": "No current index."}).encode('utf-8'))
                 elif rdata['status'] == "DONE":
-                    print(f"Worker {worker_id} finished index {worker['current_index']}.", file=sys.stderr)
+                    print(
+                        f"Worker {worker_id} finished index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
-                    self.server.worker_database["finished_indices"].append(worker["current_index"])
+                    self.server.worker_database["finished_indices"].append(
+                        worker["current_index"])
                     worker["current_index"] = None
                     self.server.save_database()
                     self._set_headers()
-                    self.wfile.write(json.dumps({"status": "OK"}).encode('utf-8'))
+                    self.wfile.write(json.dumps(
+                        {"status": "OK"}).encode('utf-8'))
                 elif rdata['status'] == "ERROR":
-                    print(f"Worker {worker_id} errored on index {worker['current_index']}.", file=sys.stderr)
+                    print(
+                        f"Worker {worker_id} errored on index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
-                    self.server.worker_database["error_indices"].append(worker["current_index"])
+                    self.server.worker_database["error_indices"].append(
+                        worker["current_index"])
                     worker["current_index"] = None
                     self.server.save_database()
                     self._set_headers()
-                    self.wfile.write(json.dumps({"status": "OK"}).encode('utf-8'))
+                    self.wfile.write(json.dumps(
+                        {"status": "OK"}).encode('utf-8'))
                 else:
-                    print(f"Unrecognized status {rdata['status']} from worker {worker_id}.", file=sys.stderr)
+                    print(
+                        f"Unrecognized status {rdata['status']} from worker {worker_id}.", file=sys.stderr)
                     self._set_headers(400)
-                    self.wfile.write(json.dumps({"status": "ERROR", "message": "Unrecognized status."}).encode('utf-8'))
+                    self.wfile.write(json.dumps(
+                        {"status": "ERROR", "message": "Unrecognized status."}).encode('utf-8'))
 
             else:
                 self._set_headers(404)
-                self.wfile.write(json.dumps({"status": "ERROR", "message": "Unknown path."}).encode('utf-8'))
+                self.wfile.write(json.dumps(
+                    {"status": "ERROR", "message": "Unknown path."}).encode('utf-8'))
         except Exception:
             self._set_headers(500)
-            self.wfile.write(json.dumps({"status": "ERROR", "message": "Internal server error."}).encode('utf-8'))
+            self.wfile.write(json.dumps(
+                {"status": "ERROR", "message": "Internal server error."}).encode('utf-8'))
             traceback.print_exc(file=sys.stderr)
 
     def do_HEAD(self):
         self._set_headers()
 
+
 if __name__ == "__main__":
     sys.path.append(seqdesign_path)
     from seqdesign import aws_utils
 
-    parser = argparse.ArgumentParser(description="Launch an EVE job scheduler on AWS")
-    parser.add_argument('run_template', type=str, default=None, help="Path to script template to schedule on new jobs")
-    parser.add_argument('database_path', type=str, default="job_database.json", help="Path to save/load job database")
-    parser.add_argument("--protein-index", type=str, default="0", help="Index (or range) of protein to train")
-    parser.add_argument("--num-workers", type=int, default=5, help="Number of workers to request")
+    parser = argparse.ArgumentParser(
+        description="Launch an EVE job scheduler on AWS")
+    parser.add_argument('run_template', type=str, default=None,
+                        help="Path to script template to schedule on new jobs")
+    parser.add_argument('database_path', type=str,
+                        default="job_database.json", help="Path to save/load job database")
+    parser.add_argument("--protein-index", type=str, default="0",
+                        help="Index (or range) of protein to train")
+    parser.add_argument("--num-workers", type=int, default=5,
+                        help="Number of workers to request")
     parser.add_argument("--instance-type", type=str, default='p2.xlarge', metavar='TYPE',
                         help="AWS instance type (e.g. p2.xlarge)")
-    parser.add_argument("--alarm", action='store_true', help="Add a minimum CPU utilization alarm")
-    parser.add_argument("--dry-run", action='store_true', help="Perform a dry run")
-    parser.add_argument("--spot", action='store_true', help="Request a spot instance")
+    parser.add_argument("--alarm", action='store_true',
+                        help="Add a minimum CPU utilization alarm")
+    parser.add_argument("--dry-run", action='store_true',
+                        help="Perform a dry run")
+    parser.add_argument("--spot", action='store_true',
+                        help="Request a spot instance")
     parser.add_argument("--s3-bucket", type=str, default='markslab-private',
                         help="s3 bucket")
     parser.add_argument("--s3-subpath", type=str, default='eve',
@@ -243,7 +277,8 @@ if __name__ == "__main__":
 
     s3_path = f"s3://{args.s3_bucket}/{args.s3_subpath}"
 
-    aws_util = aws_utils.AWSUtility(s3_project=args.s3_project, s3_base_path=s3_path)
+    aws_util = aws_utils.AWSUtility(
+        s3_project=args.s3_project, s3_base_path=s3_path)
     aws_util.s3_sync(
         local_folder=f"{home_path}/EVE_scheduling/aws_train/",
         s3_folder="scheduling/aws_train/",
@@ -254,7 +289,8 @@ if __name__ == "__main__":
     protein_indices = args.protein_index
     if '-' in protein_indices:
         protein_indices = protein_indices.split('-')
-        protein_indices = list(range(int(protein_indices[0]), int(protein_indices[1])+1))
+        protein_indices = list(
+            range(int(protein_indices[0]), int(protein_indices[1])+1))
     else:
         protein_indices = [int(protein_indices)]
 
@@ -308,6 +344,7 @@ if __name__ == "__main__":
 
     server_address = ('', SCHEDULER_PORT)
     server = HTTPServer(server_address, Scheduler)
+
     def save_database():
         with open(args.database_path, 'w') as f:
             json.dump(worker_database, f)
