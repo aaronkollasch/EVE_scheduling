@@ -65,23 +65,37 @@ if __name__ == "__main__":
             print("Error detected. Syncing all logs to S3.")
             subprocess.run(['aws', 's3', 'sync', 'logs/',
                            f'{args.s3_path}/{args.s3_project}/logs/_failed_jobs/'])
-            try:
-                r = requests.post(f"{args.scheduler_url}/update-job",
-                                  json={"worker_id": args.worker_id, "status": "FAILED"})
-            except requests.exceptions.ConnectionError as e:
-                print(e)
-                error = True
         else:
             subprocess.run(['aws', 's3', 'sync', 'results/',
                            f'{args.s3_path}/{args.s3_project}/results/'])
             subprocess.run(['aws', 's3', 'sync', 'logs/',
                            f'{args.s3_path}/{args.s3_project}/logs/'])
+        os.remove(log_file)
+
+        update_attempts = 0
+        while update_attempts < 10:
             try:
-                r = requests.post(f"{args.scheduler_url}/update-job",
-                                  json={"worker_id": args.worker_id, "status": "FINISHED"})
+                r = requests.post(
+                    f"{args.scheduler_url}/update-job",
+                    json={
+                        "worker_id": args.worker_id,
+                        "status": "FINISHED" if r.returncode == 0 else "FAILED",
+                    }
+                )
+                if (
+                    r.status_code == 200
+                    and r.json()["status"] == "OK"
+                ):
+                    break
+                else:
+                    print(f"Failed to update job status: {r.text}")
             except requests.exceptions.ConnectionError as e:
                 print(e)
-                error = True
-        os.remove(log_file)
+            update_attempts += 1
+            time.sleep(5)
+        else:
+            print("Failed to update job status.")
+            error = True
+            break
     if error:
         exit(1)
