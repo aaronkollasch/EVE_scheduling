@@ -206,6 +206,7 @@ class Scheduler(BaseHTTPRequestHandler):
                 if worker["current_index"] is None and len(self.server.protein_indices) > 0:
                     current_index = self.server.protein_indices.pop(0)
                     worker["current_index"] = current_index
+                    worker["start_time"] = int(time.time())
                     print(
                         f"Worker {worker_id} assigned index {current_index}.", file=sys.stderr)
                     self.server.save_database()
@@ -237,8 +238,10 @@ class Scheduler(BaseHTTPRequestHandler):
                     print(
                         f"Worker {worker_id} finished index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
-                    self.server.worker_database["finished_indices"].append(
-                        worker["current_index"])
+                    self.server.worker_database["finished_indices"].append({
+                        "index": worker["current_index"],
+                        "duration": (int(time.time()) - worker["start_time"]),
+                    })
                     worker["current_index"] = None
                     self.server.save_database()
                     self._set_headers()
@@ -248,8 +251,10 @@ class Scheduler(BaseHTTPRequestHandler):
                     print(
                         f"Worker {worker_id} failed on index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
-                    self.server.worker_database["failed_indices"].append(
-                        worker["current_index"])
+                    self.server.worker_database["failed_indices"].append({
+                        "index": worker["current_index"],
+                        "duration": (int(time.time()) - worker["start_time"]),
+                    })
                     worker["current_index"] = None
                     self.server.save_database()
                     self._set_headers()
@@ -348,8 +353,10 @@ if __name__ == "__main__":
         with open(args.database_path) as f:
             worker_database = json.load(f)
         for index in itertools.chain(
-            worker_database["finished_indices"],
-            worker_database["failed_indices"],
+            (worker["index"] if isinstance(worker, dict) else worker
+             for worker in worker_database["finished_indices"]),
+            (worker["index"] if isinstance(worker, dict) else worker
+             for worker in worker_database["failed_indices"]),
             (worker["current_index"] for worker in worker_database["workers"].values()),
         ):
             if index in protein_indices:
@@ -380,6 +387,7 @@ if __name__ == "__main__":
         worker.setdefault("instance_id", None)
         worker.setdefault("index_history", [])
         worker.setdefault("current_index", None)
+        worker.setdefault("start_time", 0)
 
         instance_id = worker["instance_id"]
         instance_state = "none" if instance_id is None else check_instance_status(instance_id)
