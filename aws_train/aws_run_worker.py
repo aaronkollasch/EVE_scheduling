@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# import os
+import os
 import time
 import argparse
 import requests
@@ -82,5 +82,6 @@ if __name__ == "__main__":
             except requests.exceptions.ConnectionError as e:
                 print(e)
                 error = True
+        os.remove(log_file)
     if error:
         exit(1)
