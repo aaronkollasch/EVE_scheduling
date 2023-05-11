@@ -355,12 +355,10 @@ if __name__ == "__main__":
         worker_database["workers"][worker_uuid].setdefault("instance_id", None)
         worker_database["workers"][worker_uuid].setdefault("index_history", [])
         worker_database["workers"][worker_uuid].setdefault("current_index", None)
-        if (
-                worker_database["workers"][worker_uuid]["instance_id"] is None or
-                aws_util.check_instance_status(
-                    worker_database["workers"][worker_uuid]["instance_id"]
-                ) not in ["running", "pending"]
-        ):
+        instance_id = worker_database["workers"][worker_uuid]["instance_id"]
+        instance_state = "none" if instance_id is None else check_instance_status(instance_id)
+        if instance_state not in ["running", "pending"]:
+            print(f"Worker {worker_name} instance {instance_id} is {instance_state}.")
             try:
                 instance_id = launch_worker(
                     args=args,
