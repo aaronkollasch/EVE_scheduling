@@ -36,21 +36,18 @@ if __name__ == "__main__":
             time.sleep(5)
             continue
 
-        if r.status_code == 200:
-            d = r.json()
-        else:
+        if r.status_code != 200 or (d := r.json())['status'] != 'OK':
             error = True
             attempts += 1
             time.sleep(5)
             continue
 
-        if d['status'] != 'OK' or d['index'] is None:
-            attempts += 1
-            time.sleep(5)
-            continue
-
         attempts = 0
-        index = d['index']
+
+        if index := d['index'] is None:
+            print("No jobs left to run.")
+            break
+
         run_script = run_template.format(protein_index=index)
         with open('run_job.sh', 'w') as f:
             f.write(run_script)
