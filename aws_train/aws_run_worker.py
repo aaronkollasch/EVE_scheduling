@@ -5,6 +5,9 @@ import argparse
 import requests
 import subprocess
 
+NUM_RETRIES = 12
+RETRY_INTERVAL = 10
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Calculate the log probability of mutated sequences.")
@@ -25,7 +28,7 @@ if __name__ == "__main__":
 
     error = False
     attempts = 0
-    while attempts < 10:
+    while attempts < NUM_RETRIES:
         try:
             r = requests.post(f"{args.scheduler_url}/get-job",
                               json={"worker_id": args.worker_id})
@@ -33,27 +36,26 @@ if __name__ == "__main__":
             print(e)
             error = True
             attempts += 1
-            time.sleep(5)
+            time.sleep(RETRY_INTERVAL)
             continue
 
         if r.status_code != 200:
             error = True
             attempts += 1
-            time.sleep(5)
+            time.sleep(RETRY_INTERVAL)
             continue
         d = r.json()
         if 'status' not in d or d['status'] != 'OK' or 'index' not in d:
             error = True
             attempts += 1
-            time.sleep(5)
+            time.sleep(RETRY_INTERVAL)
             continue
-
-        attempts = 0
-
         index = d['index']
         if index is None:
             print("No jobs left to run.")
             break
+
+        attempts = 0
 
         run_script = run_template.format(protein_index=index)
         with open('run_job.sh', 'w') as f:
@@ -77,7 +79,7 @@ if __name__ == "__main__":
         os.remove(log_file)
 
         update_attempts = 0
-        while update_attempts < 10:
+        while update_attempts < NUM_RETRIES:
             try:
                 r = requests.post(
                     f"{args.scheduler_url}/update-job",
@@ -96,7 +98,7 @@ if __name__ == "__main__":
             except requests.exceptions.ConnectionError as e:
                 print(e)
             update_attempts += 1
-            time.sleep(5)
+            time.sleep(RETRY_INTERVAL)
         else:
             print("Failed to update job status.")
             error = True
