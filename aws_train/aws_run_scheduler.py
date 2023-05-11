@@ -346,16 +346,19 @@ if __name__ == "__main__":
             "error_indices": [],
             "workers": {},
         }
+
     for i_worker in range(min(args.num_workers, len(protein_indices))):
         worker_name = f"eve_train_{i_worker}"
         worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
         worker_database["workers"].setdefault(worker_uuid, {})
-        worker_database["workers"][worker_uuid].setdefault("worker_name", worker_name)
-        worker_database["workers"][worker_uuid].setdefault("worker_uuid", worker_uuid)
-        worker_database["workers"][worker_uuid].setdefault("instance_id", None)
-        worker_database["workers"][worker_uuid].setdefault("index_history", [])
-        worker_database["workers"][worker_uuid].setdefault("current_index", None)
-        instance_id = worker_database["workers"][worker_uuid]["instance_id"]
+        worker = worker_database["workers"][worker_uuid]
+        worker.setdefault("worker_name", worker_name)
+        worker.setdefault("worker_uuid", worker_uuid)
+        worker.setdefault("instance_id", None)
+        worker.setdefault("index_history", [])
+        worker.setdefault("current_index", None)
+
+        instance_id = worker["instance_id"]
         instance_state = "none" if instance_id is None else check_instance_status(instance_id)
         if instance_state not in ["running", "pending"]:
             print(f"Worker {worker_name} instance {instance_id} is {instance_state}.")
@@ -367,7 +370,7 @@ if __name__ == "__main__":
                     run_template=run_template,
                     s3_path=s3_path,
                 )
-                worker_database["workers"][worker_uuid]["instance_id"] = instance_id
+                worker["instance_id"] = instance_id
             except botocore.exceptions.ClientError as e:
                 print(e)
                 break
