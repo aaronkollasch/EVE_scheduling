@@ -234,7 +234,7 @@ class Scheduler(BaseHTTPRequestHandler):
                     print(
                         f"Worker {worker_id} failed on index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
-                    self.server.worker_database["error_indices"].append(
+                    self.server.worker_database["failed_indices"].append(
                         worker["current_index"])
                     worker["current_index"] = None
                     self.server.save_database()
@@ -335,7 +335,7 @@ if __name__ == "__main__":
             worker_database = json.load(f)
         for index in itertools.chain(
             worker_database["finished_indices"],
-            worker_database["error_indices"],
+            worker_database["failed_indices"],
             (worker["current_index"] for worker in worker_database["workers"].values()),
         ):
             if index in protein_indices:
@@ -343,7 +343,7 @@ if __name__ == "__main__":
     else:
         worker_database = {
             "finished_indices": [],
-            "error_indices": [],
+            "failed_indices": [],
             "workers": {},
         }
 
