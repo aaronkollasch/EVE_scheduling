@@ -80,10 +80,17 @@ tmux send -t train.0 './run.sh' ENTER
 
 def check_instance_status(instance_id):
     ec2 = boto3.client('ec2', region_name=AWS_REGION)
-    response = ec2.describe_instance_status(
-        InstanceIds=[instance_id],
-        IncludeAllInstances=True,
-    )
+    try:
+        response = ec2.describe_instance_status(
+            InstanceIds=[instance_id],
+            IncludeAllInstances=True,
+        )
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'InvalidInstanceID.NotFound':
+            return "terminated"
+        else:
+            print(e)
+            return "unknown"
     if len(response['InstanceStatuses']) == 0:
         return "terminated"
     return response['InstanceStatuses'][0]['InstanceState']['Name']
@@ -368,7 +375,7 @@ if __name__ == "__main__":
 
         instance_id = worker["instance_id"]
         instance_state = "none" if instance_id is None else check_instance_status(instance_id)
-        if instance_state not in ["running", "pending"]:
+        if instance_state not in ["running", "pending", "unknown"]:
             print(f"Worker {worker_name} instance {instance_id} is {instance_state}.")
             try:
                 instance_id = launch_worker(
