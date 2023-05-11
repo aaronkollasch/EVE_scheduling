@@ -385,6 +385,7 @@ if __name__ == "__main__":
     server.save_database = save_database
     server.worker_database = worker_database
     server.protein_indices = protein_indices
+    save_database()
 
     print(f"Starting scheduler on http://{SCHEDULER_IP}:{SCHEDULER_PORT}")
     server.serve_forever()
