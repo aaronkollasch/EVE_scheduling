@@ -393,9 +393,10 @@ if __name__ == "__main__":
                       if worker["instance_id"] is not None)
     print(f"{num_running} workers running.")
     print(
-        f"{len(protein_indices)} unassigned protein_indices:",
-        protein_indices[:10],
-        "..." if len(protein_indices) > 10 else ""
+        f"{len(protein_indices)} unassigned protein_indices: ",
+        ", ".join(str(idx) for idx in protein_indices[:10]),
+        ", ..." if len(protein_indices) > 10 else "",
+        sep=""
     )
 
     server_address = ('', SCHEDULER_PORT)
