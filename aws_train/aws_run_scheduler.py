@@ -320,6 +320,8 @@ if __name__ == "__main__":
     if os.path.exists(args.database_path):
         with open(args.database_path) as f:
             worker_database = json.load(f)
+        for worker in worker_database.values():
+            protein_indices.remove(worker["current_index"])
     else:
         worker_database = {
             "finished_indices": [],
