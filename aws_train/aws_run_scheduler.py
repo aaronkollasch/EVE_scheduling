@@ -10,6 +10,7 @@ import base64
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
 import traceback
+import itertools
 
 import boto3
 import botocore.exceptions
@@ -320,9 +321,13 @@ if __name__ == "__main__":
     if os.path.exists(args.database_path):
         with open(args.database_path) as f:
             worker_database = json.load(f)
-        for worker in worker_database["workers"].values():
-            if worker["current_index"] is not None:
-                protein_indices.remove(worker["current_index"])
+        for index in itertools.chain(
+            worker_database["finished_indices"],
+            worker_database["error_indices"],
+            (worker["current_index"] for worker in worker_database["workers"].values()),
+        ):
+            if index in protein_indices:
+                protein_indices.remove(index)
     else:
         worker_database = {
             "finished_indices": [],
