@@ -78,6 +78,17 @@ tmux send -t train.0 './run.sh' ENTER
 """
 
 
+def check_instance_status(instance_id):
+    ec2 = boto3.client('ec2', region_name=AWS_REGION)
+    response = ec2.describe_instance_status(
+        InstanceIds=[instance_id],
+        IncludeAllInstances=True,
+    )
+    if len(response['InstanceStatuses']) == 0:
+        return "terminated"
+    return response['InstanceStatuses'][0]['InstanceState']['Name']
+
+
 def launch_worker(args, name, run_template, worker_uuid, s3_path):
     ec2 = boto3.client('ec2', region_name=AWS_REGION)
     cw = boto3.client('cloudwatch', region_name=AWS_REGION)
@@ -156,6 +167,7 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
             else:
                 print(response3)
         print("Launched.")
+        return response['Instances'][0]['InstanceId']
     except Exception as e:
         print(e)
 
@@ -340,19 +352,27 @@ if __name__ == "__main__":
         worker_database["workers"].setdefault(worker_uuid, {})
         worker_database["workers"][worker_uuid].setdefault("worker_name", worker_name)
         worker_database["workers"][worker_uuid].setdefault("worker_uuid", worker_uuid)
+        worker_database["workers"][worker_uuid].setdefault("instance_id", None)
         worker_database["workers"][worker_uuid].setdefault("index_history", [])
         worker_database["workers"][worker_uuid].setdefault("current_index", None)
-        try:
-            launch_worker(
-                args=args,
-                name=worker_name,
-                worker_uuid=worker_uuid,
-                run_template=run_template,
-                s3_path=s3_path,
-            )
-        except botocore.exceptions.ClientError as e:
-            print(e)
-            break
+        if (
+                worker_database["workers"][worker_uuid]["instance_id"] is None or
+                aws_util.check_instance_status(
+                    worker_database["workers"][worker_uuid]["instance_id"]
+                ) not in ["running", "pending"]
+        ):
+            try:
+                instance_id = launch_worker(
+                    args=args,
+                    name=worker_name,
+                    worker_uuid=worker_uuid,
+                    run_template=run_template,
+                    s3_path=s3_path,
+                )
+                worker_database["workers"][worker_uuid]["instance_id"] = instance_id
+            except botocore.exceptions.ClientError as e:
+                print(e)
+                break
     print("workers:", worker_database)
     print("protein_indices:", protein_indices)
 
