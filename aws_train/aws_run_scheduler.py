@@ -210,7 +210,9 @@ class Scheduler(BaseHTTPRequestHandler):
                         f"Worker {worker_id} assigned index {current_index}.", file=sys.stderr)
                     self.server.save_database()
                 elif worker["current_index"] is None:
-                    print(f"Worker {worker_id} has no more jobs.", file=sys.stderr)
+                    print(f"Worker {worker_id} has no more jobs; shutting down {worker['instance_id']}.", file=sys.stderr)
+                    worker["instance_id"] = None
+                    self.server.save_database()
                 self._set_headers()
                 self.wfile.write(json.dumps(
                     {"status": "OK", "index": worker['current_index']}).encode('utf-8'))
