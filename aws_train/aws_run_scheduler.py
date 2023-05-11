@@ -173,8 +173,9 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
                 print(f"Alarm set for {name} at {threshold}% CPU utilization.")
             else:
                 print(response3)
-        print("Launched.")
-        return response['Instances'][0]['InstanceId']
+        instance_id = response['Instances'][0]['InstanceId']
+        print(f"Launched {instance_id}.")
+        return instance_id
     except Exception as e:
         print(e)
 
@@ -355,6 +356,9 @@ if __name__ == "__main__":
             "failed_indices": [],
             "workers": {},
         }
+    def save_database():
+        with open(args.database_path, 'w') as f:
+            json.dump(worker_database, f)
 
     num_remaining = (
         len(protein_indices) +
@@ -386,6 +390,7 @@ if __name__ == "__main__":
                     s3_path=s3_path,
                 )
                 worker["instance_id"] = instance_id
+                save_database()
             except botocore.exceptions.ClientError as e:
                 print(e)
                 break
@@ -402,9 +407,6 @@ if __name__ == "__main__":
     server_address = ('', SCHEDULER_PORT)
     server = HTTPServer(server_address, Scheduler)
 
-    def save_database():
-        with open(args.database_path, 'w') as f:
-            json.dump(worker_database, f)
     server.save_database = save_database
     server.worker_database = worker_database
     server.protein_indices = protein_indices
