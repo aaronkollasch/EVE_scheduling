@@ -213,6 +213,8 @@ class Scheduler(BaseHTTPRequestHandler):
                     print(f"Worker {worker_id} has no more jobs; shutting down {worker['instance_id']}.", file=sys.stderr)
                     worker["instance_id"] = None
                     self.server.save_database()
+                else:
+                    print(f"Worker {worker_id} already has index {worker['current_index']}.", file=sys.stderr)
                 self._set_headers()
                 self.wfile.write(json.dumps(
                     {"status": "OK", "index": worker['current_index']}).encode('utf-8'))
