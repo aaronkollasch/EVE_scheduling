@@ -193,7 +193,7 @@ class Scheduler(BaseHTTPRequestHandler):
                     {"status": "OK", "index": worker['current_index']}).encode('utf-8'))
 
             # /update-job
-            # Request: {"worker_id": "uuid", "status": "DONE"|"ERROR"}
+            # Request: {"worker_id": "uuid", "status": "FINISHED"|"FAILED"}
             # Response: {"status": "OK"}
             elif parsed_path.path == "/update-job":
                 rdata = json.loads(self.rfile.read(
@@ -206,7 +206,7 @@ class Scheduler(BaseHTTPRequestHandler):
                     self._set_headers(400)
                     self.wfile.write(json.dumps(
                         {"status": "ERROR", "message": "No current index."}).encode('utf-8'))
-                elif rdata['status'] == "DONE":
+                elif rdata['status'] == "FINISHED":
                     print(
                         f"Worker {worker_id} finished index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
@@ -217,9 +217,9 @@ class Scheduler(BaseHTTPRequestHandler):
                     self._set_headers()
                     self.wfile.write(json.dumps(
                         {"status": "OK"}).encode('utf-8'))
-                elif rdata['status'] == "ERROR":
+                elif rdata['status'] == "FAILED":
                     print(
-                        f"Worker {worker_id} errored on index {worker['current_index']}.", file=sys.stderr)
+                        f"Worker {worker_id} failed on index {worker['current_index']}.", file=sys.stderr)
                     worker["index_history"].append(worker["current_index"])
                     self.server.worker_database["error_indices"].append(
                         worker["current_index"])

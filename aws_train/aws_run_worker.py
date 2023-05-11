@@ -29,7 +29,8 @@ if __name__ == "__main__":
         try:
             r = requests.post(f"{args.scheduler_url}/get-job",
                               json={"worker_id": args.worker_id})
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
+            print(e)
             error = True
             attempts += 1
             time.sleep(5)
@@ -64,10 +65,22 @@ if __name__ == "__main__":
             print("Error detected. Syncing all logs to S3.")
             subprocess.run(['aws', 's3', 'sync', 'logs/',
                            f'{args.s3_path}/{args.s3_project}/logs/_failed_jobs/'])
+            try:
+                r = requests.post(f"{args.scheduler_url}/update-job",
+                                  json={"worker_id": args.worker_id, "status": "FAILED"})
+            except requests.exceptions.ConnectionError as e:
+                print(e)
+                error = True
         else:
             subprocess.run(['aws', 's3', 'sync', 'results/',
                            f'{args.s3_path}/{args.s3_project}/results/'])
             subprocess.run(['aws', 's3', 'sync', 'logs/',
                            f'{args.s3_path}/{args.s3_project}/logs/'])
+            try:
+                r = requests.post(f"{args.scheduler_url}/update-job",
+                                  json={"worker_id": args.worker_id, "status": "FINISHED"})
+            except requests.exceptions.ConnectionError as e:
+                print(e)
+                error = True
     if error:
         exit(1)
