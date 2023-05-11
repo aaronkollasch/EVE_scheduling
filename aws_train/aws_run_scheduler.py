@@ -181,7 +181,7 @@ class Scheduler(BaseHTTPRequestHandler):
                 rdata = json.loads(self.rfile.read(
                     int(self.headers['Content-Length'])))
                 worker_id = rdata['worker_id']
-                worker = self.server.worker_database[worker_id]
+                worker = self.server.worker_database["worker"][worker_id]
                 if worker["current_index"] is None and len(self.server.protein_indices) > 0:
                     current_index = self.server.protein_indices.pop(0)
                     worker["current_index"] = current_index
@@ -199,7 +199,7 @@ class Scheduler(BaseHTTPRequestHandler):
                 rdata = json.loads(self.rfile.read(
                     int(self.headers['Content-Length'])))
                 worker_id = rdata['worker_id']
-                worker = self.server.worker_database[worker_id]
+                worker = self.server.worker_database["worker"][worker_id]
                 if worker.get("current_index") is None:
                     print(
                         f"Worker {worker_id} sent update with no current index.", file=sys.stderr)
@@ -320,21 +320,22 @@ if __name__ == "__main__":
     if os.path.exists(args.database_path):
         with open(args.database_path) as f:
             worker_database = json.load(f)
-        for worker in worker_database.values():
+        for worker in worker_database["workers"].values():
             protein_indices.remove(worker["current_index"])
     else:
         worker_database = {
             "finished_indices": [],
             "error_indices": [],
+            "workers": {},
         }
     for i_worker in range(min(args.num_workers, len(protein_indices))):
         worker_name = f"eve_train_{i_worker}"
         worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
-        worker_database.setdefault(worker_uuid, {})
-        worker_database[worker_uuid].setdefault("worker_name", worker_name)
-        worker_database[worker_uuid].setdefault("worker_uuid", worker_uuid)
-        worker_database[worker_uuid].setdefault("index_history", [])
-        worker_database[worker_uuid].setdefault("current_index", None)
+        worker_database["workers"].setdefault(worker_uuid, {})
+        worker_database["workers"][worker_uuid].setdefault("worker_name", worker_name)
+        worker_database["workers"][worker_uuid].setdefault("worker_uuid", worker_uuid)
+        worker_database["workers"][worker_uuid].setdefault("index_history", [])
+        worker_database["workers"][worker_uuid].setdefault("current_index", None)
         try:
             launch_worker(
                 args=args,
