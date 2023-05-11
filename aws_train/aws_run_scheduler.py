@@ -181,7 +181,7 @@ class Scheduler(BaseHTTPRequestHandler):
                 rdata = json.loads(self.rfile.read(
                     int(self.headers['Content-Length'])))
                 worker_id = rdata['worker_id']
-                worker = self.server.worker_database["worker"][worker_id]
+                worker = self.server.worker_database["workers"][worker_id]
                 if worker["current_index"] is None and len(self.server.protein_indices) > 0:
                     current_index = self.server.protein_indices.pop(0)
                     worker["current_index"] = current_index
@@ -199,7 +199,7 @@ class Scheduler(BaseHTTPRequestHandler):
                 rdata = json.loads(self.rfile.read(
                     int(self.headers['Content-Length'])))
                 worker_id = rdata['worker_id']
-                worker = self.server.worker_database["worker"][worker_id]
+                worker = self.server.worker_database["workers"][worker_id]
                 if worker.get("current_index") is None:
                     print(
                         f"Worker {worker_id} sent update with no current index.", file=sys.stderr)
