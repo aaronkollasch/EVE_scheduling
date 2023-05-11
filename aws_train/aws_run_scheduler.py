@@ -353,7 +353,8 @@ if __name__ == "__main__":
         except botocore.exceptions.ClientError as e:
             print(e)
             break
-    print(worker_database)
+    print("workers:", worker_database)
+    print("protein_indices:", protein_indices)
 
     server_address = ('', SCHEDULER_PORT)
     server = HTTPServer(server_address, Scheduler)
