@@ -25,7 +25,7 @@ USERNAME = "ubuntu"
 EVE_FOLDER = "EVE"
 AWS_REGION = 'us-west-2'
 # number of minutes to wait after completion before terminating the instance
-POWEROFF_TIME = 5
+POWEROFF_TIME = 1
 
 home_path = f"/home/{USERNAME}"
 seqdesign_path = f"{home_path}/SeqDesign"
