@@ -36,7 +36,13 @@ if __name__ == "__main__":
             time.sleep(5)
             continue
 
-        if r.status_code != 200 or (d := r.json())['status'] != 'OK':
+        if r.status_code != 200:
+            error = True
+            attempts += 1
+            time.sleep(5)
+            continue
+        d = r.json()
+        if 'status' not in d or d['status'] != 'OK' or 'index' not in d:
             error = True
             attempts += 1
             time.sleep(5)
@@ -44,7 +50,8 @@ if __name__ == "__main__":
 
         attempts = 0
 
-        if index := d['index'] is None:
+        index = d['index']
+        if index is None:
             print("No jobs left to run.")
             break
 
