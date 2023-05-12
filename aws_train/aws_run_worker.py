@@ -4,6 +4,8 @@ import time
 import argparse
 import requests
 import subprocess
+import glob
+import itertools
 
 NUM_RETRIES = 12
 RETRY_INTERVAL = 10
@@ -79,6 +81,11 @@ if __name__ == "__main__":
             subprocess.run(['aws', 's3', 'sync', 'logs/',
                            f'{args.s3_path}/{args.s3_project}/logs/'])
         os.remove(log_file)
+        for fpath in itertools.chain(
+                glob.glob('_inprogress/*'),
+                glob.glob('results/VAE_parameters/*_final'),
+        ):
+            os.remove(fpath)
 
         update_attempts = 0
         while update_attempts < NUM_RETRIES:
