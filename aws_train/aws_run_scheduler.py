@@ -32,7 +32,26 @@ seqdesign_path = f"{home_path}/SeqDesign"
 eve_path = f"{home_path}/{EVE_FOLDER}"
 eve_run_path = f"{eve_path}"
 env_bin_path = f"{home_path}/anaconda3/envs/{CONDA_ENV}/bin"
-userdata_template = f"""#!/bin/bash
+userdata_template = f"""Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+MIME-Version: 1.0
+
+--==BOUNDARY==
+Content-Type: text/cloud-config; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="cloud-config.txt"
+
+#cloud-config
+cloud_final_modules:
+- [scripts-user, always]
+
+--==BOUNDARY==
+Content-Type: text/x-shellscript; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="userdata.txt"
+
+#!/bin/bash
 su {USERNAME} -c '
 cd {home_path}
 git clone https://github.com/aaronkollasch/EVE_scheduling.git
@@ -51,7 +70,6 @@ echo {{run_template}} | base64 -d > {eve_run_path}/run_template.sh
 cd {eve_run_path}
 cat <<'EOF' > run.sh
 #!/bin/bash
-mount | grep {home_path}/s3_mnt &>/dev/null || s3fs {{s3_bucket}} {home_path}/s3_mnt -o umask=0002 -o iam_role
 source {home_path}/anaconda3/etc/profile.d/conda.sh
 conda activate {CONDA_ENV}
 cd {eve_run_path}
@@ -76,6 +94,7 @@ tmux new-session -s train -d -n 'train' 'bash'
 tmux pipe-pane -o -t train.0 'cat >> {eve_run_path}/logs/tmux-output.#h.txt'
 tmux send -t train.0 './run.sh' ENTER
 "
+--==BOUNDARY==--
 """
 
 
