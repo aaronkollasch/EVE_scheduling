@@ -398,15 +398,6 @@ if __name__ == "__main__":
     if os.path.exists(args.database_path):
         with open(args.database_path) as f:
             worker_database = json.load(f)
-        for index in itertools.chain(
-            (worker["index"] if isinstance(worker, dict) else worker
-             for worker in worker_database["finished_indices"]),
-            (worker["index"] if isinstance(worker, dict) else worker
-             for worker in worker_database["failed_indices"]),
-            (worker["current_index"] for worker in worker_database["workers"].values()),
-        ):
-            if index in protein_indices:
-                protein_indices.remove(index)
     else:
         worker_database = {
             "finished_indices": [],
@@ -429,6 +420,15 @@ if __name__ == "__main__":
             worker["spot_request_id"] = None
     save_database()
 
+    for index in itertools.chain(
+        (worker["index"] if isinstance(worker, dict) else worker
+         for worker in worker_database["finished_indices"]),
+        (worker["index"] if isinstance(worker, dict) else worker
+         for worker in worker_database["failed_indices"]),
+        (worker["current_index"] for worker in worker_database["workers"].values()),
+    ):
+        if index in protein_indices:
+            protein_indices.remove(index)
     num_remaining = (
         len(protein_indices) +
         sum(1 for worker in worker_database["workers"].values()
