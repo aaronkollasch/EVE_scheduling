@@ -65,7 +65,7 @@ if __name__ == "__main__":
         log_file = f'logs/{args.worker_id}_{index}_log.txt'
         # if "TMUX" in os.environ:
         #     r = subprocess.run(f"sleep 1 && tmux split-window tail -f '{log_file}'", shell=True)
-        with open(log_file, 'w') as f:
+        with open(log_file, 'a') as f:
             r = subprocess.run(['bash', 'run_job.sh'], stdout=f, stderr=f)
         if r.returncode != 0:
             print("Error detected. Syncing all logs to S3.")
