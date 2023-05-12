@@ -417,6 +417,14 @@ if __name__ == "__main__":
         with open(args.database_path, 'w') as f:
             json.dump(worker_database, f)
 
+    # check for finished workers
+    for worker_uuid, worker in worker_database["workers"].items():
+        if worker["instance_id"] is None:
+            continue
+        if check_instance_status(worker["instance_id"]) in ["terminated", "shutting-down"]:
+            worker["instance_id"] = None
+            save_database()
+
     num_remaining = (
         len(protein_indices) +
         sum(1 for worker in worker_database["workers"].values()
@@ -437,11 +445,8 @@ if __name__ == "__main__":
         worker.setdefault("start_time", 0)
 
         instance_id = worker["instance_id"]
-        instance_state = "none" if instance_id is None else check_instance_status(instance_id)
-        if instance_state in ["stopping", "stopped"]:
-            print(f"Worker {worker_name} instance {instance_id} is {instance_state}; not restarting.")
-        elif instance_state not in ["running", "pending", "unknown"]:
-            print(f"Worker {worker_name} instance {instance_id} is {instance_state}.")
+        if instance_id is None:
+            print(f"Launching worker {worker_name}...")
             try:
                 result = launch_worker(
                     args=args,
