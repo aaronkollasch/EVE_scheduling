@@ -420,10 +420,14 @@ if __name__ == "__main__":
     # check for finished workers
     for worker_uuid, worker in worker_database["workers"].items():
         if worker["instance_id"] is None:
+            worker["current_index"] = None
+            worker["spot_request_id"] = None
             continue
         if check_instance_status(worker["instance_id"]) in ["terminated", "shutting-down"]:
+            worker["current_index"] = None
             worker["instance_id"] = None
-            save_database()
+            worker["spot_request_id"] = None
+    save_database()
 
     num_remaining = (
         len(protein_indices) +
