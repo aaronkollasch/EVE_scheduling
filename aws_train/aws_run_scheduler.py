@@ -470,7 +470,7 @@ if __name__ == "__main__":
     print(f"{num_running} workers running.")
     print(
         f"{len(protein_indices)} unassigned protein_indices: ",
-        ", ".join(str(idx) for idx in protein_indices[:10]),
+        ", ".join(str(idx) for idx in protein_indices[:20]),
         ", ..." if len(protein_indices) > 10 else "",
         sep=""
     )
