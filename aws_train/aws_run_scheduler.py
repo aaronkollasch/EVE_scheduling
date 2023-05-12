@@ -52,6 +52,8 @@ Content-Transfer-Encoding: 7bit
 Content-Disposition: attachment; filename="userdata.txt"
 
 #!/bin/bash
+sudo systemctl stop unattended-upgrades
+sudo pkill --signal SIGKILL unattended-upgrades
 su {USERNAME} -c '
 cd {home_path}
 git clone https://github.com/aaronkollasch/EVE_scheduling.git
