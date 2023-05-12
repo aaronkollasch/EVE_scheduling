@@ -51,6 +51,7 @@ echo {{run_template}} | base64 -d > {eve_run_path}/run_template.sh
 cd {eve_run_path}
 cat <<'EOF' > run.sh
 #!/bin/bash
+mount | grep {home_path}/s3_mnt &>/dev/null || s3fs {{s3_bucket}} {home_path}/s3_mnt -o umask=0002 -o iam_role
 source {home_path}/anaconda3/etc/profile.d/conda.sh
 conda activate {CONDA_ENV}
 cd {eve_run_path}
