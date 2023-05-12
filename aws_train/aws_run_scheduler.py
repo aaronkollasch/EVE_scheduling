@@ -96,6 +96,20 @@ def check_instance_status(instance_id):
     return response['InstanceStatuses'][0]['InstanceState']['Name']
 
 
+def cancel_spot_request(spot_request_id):
+    ec2 = boto3.client('ec2', region_name=AWS_REGION)
+    try:
+        response = ec2.cancel_spot_instance_requests(
+            SpotInstanceRequestIds=[spot_request_id],
+        )
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'InvalidSpotInstanceRequestID.NotFound':
+            return False
+        else:
+            raise e
+    return response['CancelledSpotInstanceRequests'][0]['State'] == 'cancelled'
+
+
 def launch_worker(args, name, run_template, worker_uuid, s3_path):
     ec2 = boto3.client('ec2', region_name=AWS_REGION)
     cw = boto3.client('cloudwatch', region_name=AWS_REGION)
@@ -121,7 +135,7 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
                 {"ResourceType": "volume", "Tags": [
                     {"Key": "Name", "Value": name}]},
             ],
-            InstanceInitiatedShutdownBehavior="terminate",
+            InstanceInitiatedShutdownBehavior="stop",
             MinCount=1,
             MaxCount=1,
             DryRun=args.dry_run,
@@ -130,8 +144,8 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
             instance_options["InstanceMarketOptions"] = {
                 'MarketType': 'spot',
                 'SpotOptions': {
-                    'SpotInstanceType': 'one-time',
-                    'InstanceInterruptionBehavior': 'terminate',
+                    'SpotInstanceType': 'persistent',
+                    'InstanceInterruptionBehavior': 'stop',
                 }
             }
         response = ec2.run_instances(**instance_options)
@@ -174,10 +188,18 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
             else:
                 print(response3)
         instance_id = response['Instances'][0]['InstanceId']
+        spot_request_id = response['Instances'][0]['SpotInstanceRequestId']
         print(f"Launched {instance_id}.")
-        return instance_id
+        return {
+            "instance_id": instance_id,
+            "spot_request_id": spot_request_id,
+        }
     except Exception as e:
         print(e)
+        return {
+            "instance_id": None,
+            "spot_request_id": None,
+        }
 
 
 class Scheduler(BaseHTTPRequestHandler):
@@ -213,6 +235,8 @@ class Scheduler(BaseHTTPRequestHandler):
                 elif worker["current_index"] is None:
                     print(f"Worker {worker_id} has no more jobs; shutting down {worker['instance_id']}.", file=sys.stderr)
                     worker["instance_id"] = None
+                    cancel_spot_request(worker["spot_request_id"])
+                    worker["spot_request_id"] = None
                     self.server.save_database()
                 else:
                     print(f"Worker {worker_id} already has index {worker['current_index']}.", file=sys.stderr)
@@ -385,6 +409,7 @@ if __name__ == "__main__":
         worker.setdefault("worker_name", worker_name)
         worker.setdefault("worker_uuid", worker_uuid)
         worker.setdefault("instance_id", None)
+        worker.setdefault("spot_request_id", None)
         worker.setdefault("index_history", [])
         worker.setdefault("current_index", None)
         worker.setdefault("start_time", 0)
@@ -394,14 +419,15 @@ if __name__ == "__main__":
         if instance_state not in ["running", "pending", "unknown"]:
             print(f"Worker {worker_name} instance {instance_id} is {instance_state}.")
             try:
-                instance_id = launch_worker(
+                result = launch_worker(
                     args=args,
                     name=worker_name,
                     worker_uuid=worker_uuid,
                     run_template=run_template,
                     s3_path=s3_path,
                 )
-                worker["instance_id"] = instance_id
+                worker["instance_id"] = result["instance_id"]
+                worker["spot_request_id"] = result["spot_request_id"]
                 save_database()
             except botocore.exceptions.ClientError as e:
                 print(e)
