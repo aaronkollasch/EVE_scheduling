@@ -416,7 +416,9 @@ if __name__ == "__main__":
 
         instance_id = worker["instance_id"]
         instance_state = "none" if instance_id is None else check_instance_status(instance_id)
-        if instance_state not in ["running", "pending", "unknown"]:
+        if instance_state in ["stopping", "stopped"]:
+            print(f"Worker {worker_name} instance {instance_id} is {instance_state}; not restarting.")
+        elif instance_state not in ["running", "pending", "unknown"]:
             print(f"Worker {worker_name} instance {instance_id} is {instance_state}.")
             try:
                 result = launch_worker(
