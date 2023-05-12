@@ -90,7 +90,7 @@ if __name__ == "__main__":
         update_attempts = 0
         while update_attempts < NUM_RETRIES:
             try:
-                r = requests.post(
+                r2 = requests.post(
                     f"{args.scheduler_url}/update-job",
                     json={
                         "worker_id": args.worker_id,
@@ -98,12 +98,12 @@ if __name__ == "__main__":
                     }
                 )
                 if (
-                    r.status_code == 200
-                    and r.json()["status"] == "OK"
+                    r2.status_code == 200
+                    and r2.json()["status"] == "OK"
                 ):
                     break
                 else:
-                    print(f"Failed to update job status: {r.text}")
+                    print(f"Failed to update job status: {r2.text}")
             except requests.exceptions.ConnectionError as e:
                 print(e)
             update_attempts += 1
