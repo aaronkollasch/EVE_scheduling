@@ -71,6 +71,8 @@ if __name__ == "__main__":
             print("Error detected. Syncing all logs to S3.")
             subprocess.run(['aws', 's3', 'sync', 'logs/',
                            f'{args.s3_path}/{args.s3_project}/logs/_failed_jobs/'])
+            subprocess.run(['aws', 's3', 'sync', '_inprogress/',
+                           f'{args.s3_path}/{args.s3_project}/_inprogress/'])
         else:
             subprocess.run(['aws', 's3', 'sync', 'results/',
                            f'{args.s3_path}/{args.s3_project}/results/'])
