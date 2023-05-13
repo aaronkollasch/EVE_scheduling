@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
         attempts = 0
 
-        run_script = run_template.format(protein_index=index)
+        run_script = run_template.format(protein_index=index, s3_path=args.s3_path, s3_project=args.s3_project)
         with open('run_job.sh', 'w') as f:
             f.write(run_script)
         print(f"Running job {index}:\n{run_script}")
