@@ -6,6 +6,7 @@ import requests
 import subprocess
 import glob
 import itertools
+import base64
 
 NUM_RETRIES = 12
 RETRY_INTERVAL = 10
@@ -58,6 +59,15 @@ if __name__ == "__main__":
             break
 
         attempts = 0
+
+        if "run_template" in d:
+            new_run_template = base64.b64decode(d["run_template"].encode("utf-8")).decode("utf-8")
+            if new_run_template != run_template:
+                print("New run template received.")
+                run_template = new_run_template
+                with open(args.run_template, 'w') as f:
+                    f.write(run_template)
+                print("New run template written to disk.")
 
         run_script = run_template.format(protein_index=index, s3_path=args.s3_path, s3_project=args.s3_project)
         with open('run_job.sh', 'w') as f:

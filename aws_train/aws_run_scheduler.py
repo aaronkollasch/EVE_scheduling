@@ -264,7 +264,11 @@ class Scheduler(BaseHTTPRequestHandler):
                     print(f"Worker {worker_id} already has index {worker['current_index']}.", file=sys.stderr)
                 self._set_headers()
                 self.wfile.write(json.dumps(
-                    {"status": "OK", "index": worker['current_index']}).encode('utf-8'))
+                    {
+                        "status": "OK",
+                        "index": worker['current_index'],
+                        "run_template": self.server.run_template,
+                    }).encode('utf-8'))
 
             # /update-job
             # Request: {"worker_id": "uuid", "status": "FINISHED"|"FAILED"}
@@ -481,6 +485,7 @@ if __name__ == "__main__":
     server.save_database = save_database
     server.worker_database = worker_database
     server.protein_indices = protein_indices
+    server.run_template = base64.b64encode(run_template.encode('utf-8')).decode('utf-8')
     save_database()
 
     print(f"Starting scheduler server on http://{SCHEDULER_IP}:{SCHEDULER_PORT}")
