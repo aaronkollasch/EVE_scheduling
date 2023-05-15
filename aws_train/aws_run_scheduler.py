@@ -256,9 +256,12 @@ class Scheduler(BaseHTTPRequestHandler):
                     self.server.save_database()
                 elif worker["current_index"] is None:
                     print(f"Worker {worker_id} has no more jobs; shutting down {worker['instance_id']}.", file=sys.stderr)
-                    worker["instance_id"] = None
-                    cancel_spot_request(worker["spot_request_id"])
-                    worker["spot_request_id"] = None
+                    try:
+                        if cancel_spot_request(worker["spot_request_id"]):
+                            worker["instance_id"] = None
+                            worker["spot_request_id"] = None
+                    except Exception:
+                        pass
                     self.server.save_database()
                 else:
                     print(f"Worker {worker_id} already has index {worker['current_index']}.", file=sys.stderr)
