@@ -118,7 +118,25 @@ def check_instance_status(instance_id):
     return response['InstanceStatuses'][0]['InstanceState']['Name']
 
 
+def terminate_instance(instance_id):
+    if instance_id is None:
+        return False
+    ec2 = boto3.client('ec2', region_name=AWS_REGION)
+    try:
+        response = ec2.terminate_instances(
+            InstanceIds=[instance_id],
+        )
+    except botocore.exceptions.ClientError as e:
+        if e.response['Error']['Code'] == 'InvalidInstanceID.NotFound':
+            return False
+        else:
+            raise e
+    return response['TerminatingInstances'][0]['CurrentState']['Name'] == 'shutting-down'
+
+
 def cancel_spot_request(spot_request_id):
+    if spot_request_id is None:
+        return False
     ec2 = boto3.client('ec2', region_name=AWS_REGION)
     try:
         response = ec2.cancel_spot_instance_requests(
@@ -258,8 +276,9 @@ class Scheduler(BaseHTTPRequestHandler):
                     print(f"Worker {worker_id} has no more jobs; shutting down {worker['instance_id']}.", file=sys.stderr)
                     try:
                         if cancel_spot_request(worker["spot_request_id"]):
-                            worker["instance_id"] = None
                             worker["spot_request_id"] = None
+                        if terminate_instance(worker["instance_id"]):
+                            worker["instance_id"] = None
                     except Exception:
                         pass
                     self.server.save_database()
