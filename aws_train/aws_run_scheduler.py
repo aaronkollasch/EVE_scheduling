@@ -493,11 +493,22 @@ if __name__ == "__main__":
                 break
     num_running = sum(1 for worker in worker_database["workers"].values()
                       if worker["instance_id"] is not None)
+    in_progress = [
+        worker["current_index"]
+        for worker in worker_database["workers"].values()
+        if worker["current_index"] is not None
+    ]
     print(f"{num_running} workers running.")
     print(
         f"{len(protein_indices)} unassigned protein_indices: ",
         ", ".join(str(idx) for idx in protein_indices[:20]),
-        ", ..." if len(protein_indices) > 10 else "",
+        ", ..." if len(protein_indices) > 20 else "",
+        sep=""
+    )
+    print(
+        f"{len(in_progress)} in-progress protein_indices: ",
+        ", ".join(str(idx) for idx in in_progress[:20]),
+        ", ..." if len(in_progress) > 20 else "",
         sep=""
     )
 
