@@ -26,4 +26,5 @@ python compute_evol_indices.py \
     --all_singles_mutations_folder $all_singles_mutations_folder \
     --output_evol_indices_location $output_evol_indices_location \
     --num_samples_compute_evol_indices $num_samples_compute_evol_indices \
-    --batch_size $batch_size
+    --batch_size $batch_size \
+    --save_inprogress
