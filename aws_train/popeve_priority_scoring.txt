@@ -17,6 +17,7 @@ python compute_evol_indices.py \
     --MSA_data_folder $MSA_data_folder \
     --MSA_list $MSA_list \
     --protein_index $protein_index \
+    --no_filter_columns \
     --MSA_weights_location $MSA_weights_location \
     --VAE_checkpoint_location $VAE_checkpoint_location \
     --model_name_suffix $model_name_suffix \
