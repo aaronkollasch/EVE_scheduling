@@ -94,6 +94,8 @@ if __name__ == "__main__":
         for fpath in itertools.chain(
                 glob.glob('_inprogress/*'),
                 glob.glob('results/VAE_parameters/*_final'),
+                glob.glob('results/evol_indices/*.csv'),
+                glob.glob('results/EVE_scores/*.csv'),
         ):
             os.remove(fpath)
 
