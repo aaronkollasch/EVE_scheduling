@@ -501,6 +501,7 @@ if __name__ == "__main__":
         for worker in worker_database["workers"].values()
         if worker["current_index"] is not None
     ]
+    in_progress.sort()
     print(f"{num_running} workers running.")
     print(
         f"{len(protein_indices)} unassigned protein_indices: ",
