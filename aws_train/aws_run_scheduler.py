@@ -370,6 +370,8 @@ if __name__ == "__main__":
                         help="Number of workers to request")
     parser.add_argument("--instance-type", type=str, default='p2.xlarge', metavar='TYPE',
                         help="AWS instance type (e.g. p2.xlarge)")
+    parser.add_argument("--name-prefix", type=str, default="eve_train", metavar='PREFIX',
+                        help="Prefix for job/instance names")
     parser.add_argument("--alarm", action='store_true',
                         help="Add a minimum CPU utilization alarm")
     parser.add_argument("--dry-run", action='store_true',
@@ -463,7 +465,7 @@ if __name__ == "__main__":
     )
     # launch required number of workers
     for i_worker in range(min(args.num_workers, num_remaining)):
-        worker_name = f"eve_train_{i_worker}"
+        worker_name = f"{args.name_prefix}_{i_worker}"
         worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
         worker_database["workers"].setdefault(worker_uuid, {})
         worker = worker_database["workers"][worker_uuid]
