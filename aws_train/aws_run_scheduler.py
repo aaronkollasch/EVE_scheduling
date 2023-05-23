@@ -461,7 +461,8 @@ if __name__ == "__main__":
     num_remaining = (
         len(protein_indices) +
         sum(1 for worker in worker_database["workers"].values()
-            if worker["current_index"] is not None)
+            if worker["current_index"] is not None
+            and worker["instance_id"] is None)
     )
     # launch required number of workers
     for i_worker in range(min(args.num_workers, num_remaining)):
