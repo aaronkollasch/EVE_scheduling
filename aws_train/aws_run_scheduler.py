@@ -15,10 +15,32 @@ import itertools
 import boto3
 import botocore.exceptions
 
+
+def check_port_occupied(port, address="127.0.0.1"):
+    """
+    Check if a port is occupied by attempting to bind the socket
+
+    :return: socket.error if the port is in use, otherwise False
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind((address, port))
+    except socket.error as e:
+        return e
+    finally:
+        s.close()
+    return False
+
+
 hostname = socket.gethostname()
 SCHEDULER_IP = socket.gethostbyname(hostname)
-SCHEDULER_PORT = 8080
-print("Scheduler IP:", SCHEDULER_IP)
+for port in range(8080, 8090):
+    if not check_port_occupied(port):
+        SCHEDULER_PORT = port
+        break
+else:
+    raise Exception("Unable to find free port")
+print("Scheduler IP:", SCHEDULER_IP, "Port:", SCHEDULER_PORT)
 
 CONDA_ENV = "protein_env"
 USERNAME = "ubuntu"
