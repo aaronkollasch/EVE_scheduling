@@ -483,11 +483,14 @@ if __name__ == "__main__":
     num_remaining = (
         len(protein_indices) +
         sum(1 for worker in worker_database["workers"].values()
-            if worker["current_index"] is not None
-            and worker["instance_id"] is None)
+            if worker["current_index"] is not None)
     )
+    num_running = sum(1 for worker in worker_database["workers"].values()
+                      if worker["instance_id"] is not None)
     # launch required number of workers
-    for i_worker in range(min(args.num_workers, num_remaining)):
+    for i_worker in range(args.num_workers):
+        if num_running >= num_remaining:
+            break
         worker_name = f"{args.name_prefix}_{i_worker}"
         worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
         worker_database["workers"].setdefault(worker_uuid, {})
@@ -517,8 +520,9 @@ if __name__ == "__main__":
             except botocore.exceptions.ClientError as e:
                 print(e)
                 break
-    num_running = sum(1 for worker in worker_database["workers"].values()
-                      if worker["instance_id"] is not None)
+
+        num_running = sum(1 for worker in worker_database["workers"].values()
+                          if worker["instance_id"] is not None)
     in_progress = [
         worker["current_index"]
         for worker in worker_database["workers"].values()
