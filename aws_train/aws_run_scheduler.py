@@ -251,14 +251,14 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
             else:
                 print(response3)
         instance_id = response['Instances'][0]['InstanceId']
-        spot_request_id = response['Instances'][0]['SpotInstanceRequestId']
+        spot_request_id = response['Instances'][0]['SpotInstanceRequestId'] if args.spot else None
         print(f"Launched {instance_id}.")
         return {
             "instance_id": instance_id,
             "spot_request_id": spot_request_id,
         }
     except Exception as e:
-        print(e)
+        print("Exception:", e)
         return {
             "instance_id": None,
             "spot_request_id": None,
