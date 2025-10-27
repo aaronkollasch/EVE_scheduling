@@ -523,6 +523,9 @@ if __name__ == "__main__":
 
         num_running = sum(1 for worker in worker_database["workers"].values()
                           if worker["instance_id"] is not None)
+        if num_running == 0:
+            print("Could not launch workers; exiting.")
+            sys.exit(1)
     in_progress = [
         worker["current_index"]
         for worker in worker_database["workers"].values()
