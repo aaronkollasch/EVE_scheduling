@@ -142,7 +142,8 @@ if __name__ == "__main__":
             f"Launching {'spot' if args.spot else 'on-demand'} instance {name} with commands:")
         print(run_string)
         run_string = '\n'.join([
-            f"{line.strip()} || EXIT_STATUS=$?"
+            f"{line.strip()}" if line.strip().endswith("\\")
+            else f"{line.strip()} || EXIT_STATUS=$?"
             for line in run_string.splitlines(keepends=False)
             if line.strip()
         ])
