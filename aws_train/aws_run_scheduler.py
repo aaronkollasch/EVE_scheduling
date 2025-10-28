@@ -14,6 +14,7 @@ import itertools
 
 import boto3
 import botocore.exceptions
+from botocore.utils import InstanceMetadataRegionFetcher
 
 
 def check_port_occupied(port, address="127.0.0.1"):
@@ -42,10 +43,12 @@ else:
     raise Exception("Unable to find free port")
 print("Scheduler IP:", SCHEDULER_IP, "Port:", SCHEDULER_PORT)
 
+region_fetcher = InstanceMetadataRegionFetcher(timeout=60, num_attempts=3)
+AWS_REGION = region_fetcher.retrieve_region()
+
 CONDA_ENV = "protein_env"
 USERNAME = "ubuntu"
 EVE_FOLDER = "EVE"
-AWS_REGION = 'us-west-2'
 # number of minutes to wait after completion before terminating the instance
 POWEROFF_TIME = 1
 
