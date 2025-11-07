@@ -5,7 +5,6 @@ import time
 import argparse
 import socket
 import json
-import uuid
 import base64
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse
@@ -494,8 +493,8 @@ if __name__ == "__main__":
     for i_worker in range(args.num_workers):
         if num_running >= num_remaining:
             break
-        worker_name = f"{args.name_prefix}_{i_worker}"
-        worker_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, worker_name))
+        worker_name = f"{args.name_prefix}_worker_{i_worker}"
+        worker_uuid = worker_name
         worker_database["workers"].setdefault(worker_uuid, {})
         worker = worker_database["workers"][worker_uuid]
         worker.setdefault("worker_name", worker_name)
