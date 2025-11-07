@@ -78,6 +78,8 @@ Content-Disposition: attachment; filename="userdata.txt"
 #!/bin/bash
 sudo systemctl stop unattended-upgrades
 sudo pkill --signal SIGKILL unattended-upgrades
+sudo systemctl disable unattended-upgrades
+sudo sed -i 's/Unattended-Upgrade "1"/Unattended-Upgrade "0"/g' /etc/apt/apt.conf.d/20auto-upgrades
 su {USERNAME} -c '
 cd {home_path}
 git clone https://github.com/aaronkollasch/EVE_scheduling.git
