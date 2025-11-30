@@ -269,6 +269,72 @@ def launch_worker(args, name, run_template, worker_uuid, s3_path):
         }
 
 
+class SchedulerHTTPServer(HTTPServer):
+    def __init__(self, args, worker_database, protein_indices, run_template, server_address, bind_and_activate: bool = True) -> None:
+        super().__init__(server_address, Scheduler, bind_and_activate)
+        self.args = args
+        self.worker_database = worker_database
+        self.protein_indices = protein_indices
+        self.run_template = run_template
+        self.last_worker_launch_time = time.time()
+
+    def save_database(self):
+        with open(self.args.database_path, 'w') as f:
+            json.dump(self.worker_database, f)
+
+    def launch_workers(self):
+        # launch required number of workers
+        num_remaining = (
+            len(protein_indices) +
+            sum(1 for worker in self.worker_database["workers"].values()
+                if worker["current_index"] is not None)
+        )
+        num_running = sum(1 for worker in self.worker_database["workers"].values()
+                          if worker["instance_id"] is not None)
+        if num_running >= num_remaining:
+            return
+        for i_worker in range(args.num_workers):
+            if num_running >= num_remaining:
+                break
+            worker_name = f"{args.name_prefix}_worker_{i_worker}"
+            worker_uuid = worker_name
+            self.worker_database["workers"].setdefault(worker_uuid, {})
+            worker = self.worker_database["workers"][worker_uuid]
+            worker.setdefault("worker_name", worker_name)
+            worker.setdefault("worker_uuid", worker_uuid)
+            worker.setdefault("instance_id", None)
+            worker.setdefault("spot_request_id", None)
+            worker.setdefault("index_history", [])
+            worker.setdefault("current_index", None)
+            worker.setdefault("start_time", 0)
+
+            instance_id = worker["instance_id"]
+            if instance_id is None:
+                print(f"Launching worker {worker_name}...")
+                try:
+                    result = launch_worker(
+                        args=args,
+                        name=worker_name,
+                        worker_uuid=worker_uuid,
+                        run_template=run_template,
+                        s3_path=s3_path,
+                    )
+                    worker["instance_id"] = result["instance_id"]
+                    worker["spot_request_id"] = result["spot_request_id"]
+                    save_database()
+                except botocore.exceptions.ClientError:
+                    print("Failed")
+                    return
+        print(f"{num_running} workers running.")
+
+    def service_actions(self) -> None:
+        super().service_actions()
+        if time.time() > self.last_worker_launch_time + 60 * 5:
+            self.launch_workers()
+            self.last_worker_launch_time = time.time()
+
+
+
 class Scheduler(BaseHTTPRequestHandler):
     def _set_headers(self, code=200):
         self.send_response(code)
@@ -551,12 +617,10 @@ if __name__ == "__main__":
     )
 
     server_address = ('', SCHEDULER_PORT)
-    server = HTTPServer(server_address, Scheduler)
+    server_run_template = base64.b64encode(run_template.encode('utf-8')).decode('utf-8')
+    server = SchedulerHTTPServer(args, worker_database, protein_indices, server_run_template, server_address)
 
-    server.save_database = save_database
     server.worker_database = worker_database
-    server.protein_indices = protein_indices
-    server.run_template = base64.b64encode(run_template.encode('utf-8')).decode('utf-8')
     save_database()
 
     print(f"Starting scheduler server on http://{SCHEDULER_IP}:{SCHEDULER_PORT}")
